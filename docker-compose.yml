@@ -1,0 +1,62 @@
+# Docker Compose file Reference (https://docs.docker.com/compose/compose-file/)
+
+version: '3.7'
+
+# Define services
+services:
+  # App backend service
+  chat-api:
+    # Configuration for building the docker image for the backend service
+    build:
+      context: src/chatApi # Use an image built from the specified dockerfile in the `src/chatApi` directory.
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080" # Forward the exposed port 8080 on the container to port 8080 on the host machine
+    restart: always
+    depends_on: 
+      - db # This service depends on mysql. Start that first.
+    environment: # Pass environment variables to the service
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db_chat
+      SPRING_DATASOURCE_USERNAME: dbuser
+      SPRING_DATASOURCE_PASSWORD: dbuser
+    networks: # Networks to join (Services on the same network can communicate with each other using their name)
+      - backend
+      - frontend
+
+  # Frontend Service 
+  chat-ui:
+    build:
+      context: src/chatui # Use an image built from the specified dockerfile in the `src/chatui` directory.
+      dockerfile: Dockerfile
+    ports:
+      - "9090:80" # Forward the exposed port 80 on the container to port 80 on the host machine
+    restart: always
+    depends_on:
+      - chat-api
+    networks:
+      - frontend  
+
+  # Database Service (Mysql)
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_chat
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: dbuser
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - backend  
+  
+# Volumes
+volumes:
+  db-data:
+
+# Networks to be created to facilitate communication between containers
+networks:
+  backend:
+  frontend:    
