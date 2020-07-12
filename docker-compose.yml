@@ -29,7 +29,7 @@ services:
       context: src/chatui # Use an image built from the specified dockerfile in the `src/chatui` directory.
       dockerfile: Dockerfile
     ports:
-      - "9090:80" # Forward the exposed port 80 on the container to port 80 on the host machine
+      - "9090:80" # Forward the exposed port 80 on the container to port 9090 on the host machine
     restart: always
     depends_on:
       - chat-api
