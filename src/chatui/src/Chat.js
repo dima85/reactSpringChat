@@ -4,6 +4,7 @@ import { ValidatorForm, TextValidator} from 'react-material-ui-form-validator';
 import Button from '@material-ui/core/Button';
 import Box from '@material-ui/core/Box';
 import { withStyles } from '@material-ui/core/styles';
+import { Client } from '@stomp/stompjs';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Backdrop from '@material-ui/core/Backdrop';
 import MuiAlert from '@material-ui/lab/Alert';
@@ -54,20 +55,75 @@ class Chat extends React.Component {
         };
     }
     
+    componentWillUnmount() {
+        this.client.unsubscribe('/topic/chat');
+        this.client.deactivate();
+    }
+
     async componentDidMount() {
         try {
             const response = await fetch('http://localhost:8080/messages/');
             const body = await response.json();
             this.setState({ messages: body, isLoading: false });
             
+            this.scrollToBottom();
+
+            this.client = new Client();
+            this.client.configure({
+                brokerURL: 'ws://localhost:8080/stomp',
+                onConnect: () => {      
+                    this.client.subscribe('/topic/chat', this.handleNewMessageReceived);
+                },
+                onWebSocketError: (wsError) => {
+                    console.error('Error establihing ws connection: ' + wsError);
+                    this.setState({ error: true, isLoading: false });
+                }
+                // Helps during debugging, remove in production
+                // debug: (str) => {
+                //   console.log(new Date(), str);
+                // }
+            });
+        
+            this.client.activate();
         } catch (error) {
             console.error('Error connecting to server: ' + error);
             this.setState({ error: true, isLoading: false });
         }
     }
 
+    handleNewMessageReceived = message => {
+        let state = this.state;
+        state.messages.push(JSON.parse(message.body));
+        state = { 
+            ...this.state,
+            messages: state.messages,
+            isMessageLoading: false
+        };
+        this.setState(this.state);
+    }
+
+    scrollToBottom = () => {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+    }
+
+    componentDidUpdate() {
+        this.scrollToBottom();
+    }
+
     handleSubmit = async (event) => {     
-        event.preventDefault();        
+        event.preventDefault();
+        this.client.publish({
+            destination: '/app/new-message', 
+            body: JSON.stringify({
+                "author": this.props.user.name,
+                "text": this.state.newMessage
+            })
+        });
+        this.setState({
+            ...this.state,
+            newMessage: '',
+            isMessageLoading: true
+        });
     }
     
     handleChange = (event) => {
