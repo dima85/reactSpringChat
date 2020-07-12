@@ -1,0 +1,22 @@
+.message {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-top: 15px;
+}
+
+.my {
+    border: 1px solid #c7cdd2;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.message-author {
+    color: #c7cdd2;
+}
+.message-text {
+    color: #767b82;
+    text-align: left;
+    word-break: break-all;
+}
